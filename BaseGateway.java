@@ -6,9 +6,10 @@ import java.util.Map;
  * common functionality for all concrete gateway implementations.
  */
 public abstract class BaseGateway implements PaymentGateway {
-    
+
+    protected GatewayType type;
     protected String endpoint;
-    
+
     /**
      * Constructs a BaseGateway with the specified API endpoint.
      *
@@ -26,7 +27,20 @@ public abstract class BaseGateway implements PaymentGateway {
     public String getEndpoint() {
         return endpoint;
     }
-    
+
+
+    /**
+     * Gets the gateway type for this gateway.
+     *
+     * @return The gateway type
+     */
+    @Override
+    public GatewayType getType() {
+        return type;
+    }
+
+
+
     @Override
     public Map<String, String> getTransactionStatus(String transactionId) {
         // Common implementation for checking transaction status

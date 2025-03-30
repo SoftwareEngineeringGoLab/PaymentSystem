@@ -32,4 +32,6 @@ public interface PaymentGateway {
      * @return A result map containing the transaction status
      */
     Map<String, String> getTransactionStatus(String transactionId);
+
+    GatewayType getType();
 }
