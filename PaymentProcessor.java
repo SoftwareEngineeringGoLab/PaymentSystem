@@ -2,15 +2,14 @@ import java.util.Date;
 import java.util.Map;
 
 public class PaymentProcessor {
-
-    PaymentGateway creditCardGateway;
-    PaymentGateway digitalWalletGateway;
-    PaymentGateway bankTransferGateway;
+    private String creditCardEndpoint;
+    private String digitalWalletEndpoint;
+    private String bankTransferEndpoint;
 
     public PaymentProcessor(String creditCardEndpoint, String digitalWalletEndpoint, String bankTransferEndpoint) {
-        creditCardGateway = new PaymentGateway(creditCardEndpoint);
-        digitalWalletGateway = new PaymentGateway(digitalWalletEndpoint);
-        bankTransferGateway = new PaymentGateway(bankTransferEndpoint);
+        this.creditCardEndpoint = creditCardEndpoint;
+        this.digitalWalletEndpoint = digitalWalletEndpoint;
+        this.bankTransferEndpoint = bankTransferEndpoint;
     }
 
     public Map<String, String> processPayment(PaymentType paymentType, double amount, String currency,
@@ -26,29 +25,45 @@ public class PaymentProcessor {
             return Map.of("status", "failed", "message", "Validation error");
         }
 
-        PaymentGateway gateway = selectGateway(payment);
-        if (gateway == null) {
-            return Map.of("status", "failed", "message", "Invalid gateway");
-
+        Map<String, String> result;
+        switch (payment.type) {
+            case CREDIT_CARD -> {
+                result = processCreditCard(payment, customerInfo);
+            }
+            case DIGITAL_WALLET -> {
+                result = processDigitalWallet(payment, customerInfo);
+            }
+            case BANK_TRANSFER -> {
+                result = processBankTransfer(payment, customerInfo);
+            }
+            default -> {
+                return Map.of("status", "failed", "message", "Unsupported payment type");
+            }
         }
-        Map<String, String> result = gateway.process(paymentType, payment, customerInfo);
+
         logTransaction(paymentType, amount, currency, customerInfo, paymentDetails, result);
         return result;
     }
 
-    private PaymentGateway selectGateway(Payment payment) {
-        switch (payment.type) {
-            case CREDIT_CARD -> {
-                return creditCardGateway;
-            }
-            case DIGITAL_WALLET -> {
-                return digitalWalletGateway;
-            }
-            case BANK_TRANSFER -> {
-                return bankTransferGateway;
-            }
-        }
-        return null;
+    private Map<String, String> processCreditCard(Payment payment, Map<String, String> customerInfo) {
+        System.out.println("Connecting to Credit Card API at " + creditCardEndpoint);
+        String transactionId = "CC" + new Date().getTime();
+        System.out.println("Processing credit card payment for " + customerInfo.get("name"));
+        return Map.of("status", "success", "transaction_id", transactionId);
+    }
+
+    private Map<String, String> processDigitalWallet(Payment payment, Map<String, String> customerInfo) {
+        System.out.println("Connecting to Digital Wallet API at " + digitalWalletEndpoint);
+        String transactionId = "DW" + new Date().getTime();
+        System.out.println("Processing digital wallet payment for " + customerInfo.get("name"));
+        return Map.of("status", "success", "transaction_id", transactionId);
+    }
+
+    private Map<String, String> processBankTransfer(Payment payment, Map<String, String> customerInfo) {
+        System.out.println("Connecting to Bank Transfer API at " + bankTransferEndpoint);
+        String transactionId = "BT" + new Date().getTime();
+        System.out.println("Processing bank transfer payment for " + customerInfo.get("name"));
+        return Map.of("status", "success", "transaction_id", transactionId);
     }
 
     private void logTransaction(PaymentType paymentType, double amount, String currency,
