@@ -1,20 +1,47 @@
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * The main payment processor that handles payment validation and processing
+ * through selected payment gateways. Demonstrates polymorphism using the
+ * PaymentGateway interface.
+ */
 public class PaymentProcessor {
-    private String creditCardEndpoint;
-    private String digitalWalletEndpoint;
-    private String bankTransferEndpoint;
 
-    public PaymentProcessor(String creditCardEndpoint, String digitalWalletEndpoint, String bankTransferEndpoint) {
-        this.creditCardEndpoint = creditCardEndpoint;
-        this.digitalWalletEndpoint = digitalWalletEndpoint;
-        this.bankTransferEndpoint = bankTransferEndpoint;
+    private PaymentGateway stripeGateway;
+    private PaymentGateway paypalGateway;
+
+    /**
+     * Constructs a PaymentProcessor with configured gateways.
+     *
+     * @param stripeEndpoint The Stripe API endpoint
+     * @param stripeApiKey The Stripe API key
+     * @param paypalEndpoint The PayPal API endpoint
+     * @param paypalClientId The PayPal client ID
+     * @param paypalClientSecret The PayPal client secret
+     */
+    public PaymentProcessor(String stripeEndpoint, String stripeApiKey,
+                           String paypalEndpoint, String paypalClientId, String paypalClientSecret) {
+        this.stripeGateway = new StripeGateway(stripeEndpoint, stripeApiKey);
+        this.paypalGateway = new PayPalGateway(paypalEndpoint, paypalClientId, paypalClientSecret);
     }
 
+    /**
+     * Processes a payment using the specified payment details and gateway.
+     *
+     * @param paymentType The type of payment to process
+     * @param amount The payment amount
+     * @param currency The payment currency
+     * @param customerInfo Customer information
+     * @param paymentDetails Specific payment details
+     * @param selectedGateway The name of the gateway to use ("stripe" or "paypal")
+     * @return A result map containing status and transaction information
+     */
     public Map<String, String> processPayment(PaymentType paymentType, double amount, String currency,
-                                              Map<String, String> customerInfo, Map<String, String> paymentDetails) {
+                                             Map<String, String> customerInfo, Map<String, String> paymentDetails,
+                                              GatewayType selectedGateway) {
 
+        // Create and validate the payment object
         Payment payment = PaymentFactory.createPayment(paymentType, amount, currency, paymentDetails);
 
         if (payment == null) {
@@ -25,65 +52,95 @@ public class PaymentProcessor {
             return Map.of("status", "failed", "message", "Validation error");
         }
 
-        Map<String, String> result;
-        switch (payment.type) {
-            case CREDIT_CARD -> {
-                result = processCreditCard(payment, customerInfo);
-            }
-            case DIGITAL_WALLET -> {
-                result = processDigitalWallet(payment, customerInfo);
-            }
-            case BANK_TRANSFER -> {
-                result = processBankTransfer(payment, customerInfo);
-            }
-            default -> {
-                return Map.of("status", "failed", "message", "Unsupported payment type");
-            }
+        // Select the appropriate gateway (demonstrating polymorphism)
+        PaymentGateway gateway = selectGateway(selectedGateway);
+        if (gateway == null) {
+            return Map.of("status", "failed", "message", "Invalid gateway selection");
         }
 
-        logTransaction(paymentType, amount, currency, customerInfo, paymentDetails, result);
+        // Process the payment using the selected gateway
+        Map<String, String> result = gateway.process(paymentType, payment, customerInfo);
+        
+        // Log the transaction
+        logTransaction(paymentType, amount, currency, customerInfo, selectedGateway, result);
+        
         return result;
     }
 
-    private Map<String, String> processCreditCard(Payment payment, Map<String, String> customerInfo) {
-        System.out.println("Connecting to Credit Card API at " + creditCardEndpoint);
-        String transactionId = "CC" + new Date().getTime();
-        System.out.println("Processing credit card payment for " + customerInfo.get("name"));
-        return Map.of("status", "success", "transaction_id", transactionId);
+    /**
+     * Demonstrates runtime polymorphism by selecting a gateway based on the name.
+     *
+     * @param gatewayType The name of the gateway to use
+     * @return The selected PaymentGateway implementation
+     */
+    private PaymentGateway selectGateway(GatewayType gatewayType) {
+        return switch (gatewayType) {
+            case GatewayType.STRIPE -> stripeGateway;
+            case GatewayType.PAYPAL -> paypalGateway;
+        };
     }
 
-    private Map<String, String> processDigitalWallet(Payment payment, Map<String, String> customerInfo) {
-        System.out.println("Connecting to Digital Wallet API at " + digitalWalletEndpoint);
-        String transactionId = "DW" + new Date().getTime();
-        System.out.println("Processing digital wallet payment for " + customerInfo.get("name"));
-        return Map.of("status", "success", "transaction_id", transactionId);
+    /**
+     * Refunds a payment through the appropriate gateway.
+     *
+     * @param transactionId The transaction ID to refund
+     * @param amount The amount to refund
+     * @param gatewayType The type of the gateway to use
+     * @return A result map containing refund information
+     */
+    public Map<String, String> refundPayment(String transactionId, double amount, GatewayType gatewayType) {
+        PaymentGateway gateway = selectGateway(gatewayType);
+        if (gateway == null) {
+            return Map.of("status", "failed", "message", "Invalid gateway selection");
+        }
+        
+        return gateway.refundPayment(transactionId, amount);
     }
 
-    private Map<String, String> processBankTransfer(Payment payment, Map<String, String> customerInfo) {
-        System.out.println("Connecting to Bank Transfer API at " + bankTransferEndpoint);
-        String transactionId = "BT" + new Date().getTime();
-        System.out.println("Processing bank transfer payment for " + customerInfo.get("name"));
-        return Map.of("status", "success", "transaction_id", transactionId);
-    }
-
+    /**
+     * Logs transaction details.
+     */
     private void logTransaction(PaymentType paymentType, double amount, String currency,
-                                Map<String, String> customerInfo, Map<String, String> paymentDetails,
-                                Map<String, String> result) {
-        String logEntry = String.format("%s - %s payment of %.2f %s for %s: %s",
-                new Date(), paymentType, amount, currency, customerInfo.get("name"), result);
+                               Map<String, String> customerInfo, GatewayType gateway,
+                               Map<String, String> result) {
+        String logEntry = String.format("%s - %s payment of %.2f %s for %s via %s: %s",
+                new Date(), paymentType, amount, currency, customerInfo.get("name"), gateway.name(), result);
         System.out.println("LOG: " + logEntry);
     }
 
+    /**
+     * Example usage of the payment processor.
+     */
     public static void main(String[] args) {
+        // Initialize the payment processor with configured gateways
         PaymentProcessor processor = new PaymentProcessor(
-                "https://api.creditcard.com/process",
-                "https://api.digitalwallet.com/process",
-                "https://api.banktransfer.com/process"
+                "https://api.stripe.com/v1", "sk_test_stripe_key",
+                "https://api.paypal.com/v1", "paypal_client_id", "paypal_client_secret"
         );
+        
+        // Customer and payment information
         Map<String, String> customer = Map.of("name", "John Doe", "email", "john@example.com");
-        Map<String, String> paymentDetails = Map.of("card_number", "123456789012", "expiry", "12/25", "cvv", "123");
+        Map<String, String> paymentDetails = Map.of("card_number", "4242424242424242", 
+                                                   "expiry", "12/25", "cvv", "123");
 
-        Map<String, String> result = processor.processPayment(PaymentType.CREDIT_CARD, 100, "USD", customer, paymentDetails);
-        System.out.println("Final Result: " + result);
+        // Process a payment using the Stripe gateway
+        System.out.println("\n--- Processing payment through Stripe ---");
+        Map<String, String> stripeResult = processor.processPayment(
+            PaymentType.CREDIT_CARD, 100, "USD", customer, paymentDetails, GatewayType.STRIPE
+        );
+        System.out.println("Stripe Result: " + stripeResult);
+        
+        // Process a payment using the PayPal gateway (demonstrating polymorphism)
+        System.out.println("\n--- Processing same payment through PayPal ---");
+        Map<String, String> paypalResult = processor.processPayment(
+            PaymentType.CREDIT_CARD, 100, "USD", customer, paymentDetails, GatewayType.PAYPAL
+        );
+        System.out.println("PayPal Result: " + paypalResult);
+        
+        // Demonstrate refund functionality
+        System.out.println("\n--- Processing refund through Stripe ---");
+        String transactionId = stripeResult.get("transaction_id");
+        Map<String, String> refundResult = processor.refundPayment(transactionId, 50, GatewayType.STRIPE);
+        System.out.println("Refund Result: " + refundResult);
     }
 }
