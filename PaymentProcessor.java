@@ -3,10 +3,14 @@ import java.util.Map;
 
 public class PaymentProcessor {
 
-    private Map<String, String> config;
+    PaymentGateway creditCardGateway;
+    PaymentGateway digitalWalletGateway;
+    PaymentGateway bankTransferGateway;
 
-    public PaymentProcessor(Map<String, String> config) {
-        this.config = config;
+    public PaymentProcessor(String creditCardEndpoint, String digitalWalletEndpoint, String bankTransferEndpoint) {
+        creditCardGateway = new PaymentGateway(creditCardEndpoint);
+        digitalWalletGateway = new PaymentGateway(digitalWalletEndpoint);
+        bankTransferGateway = new PaymentGateway(bankTransferEndpoint);
     }
 
     public Map<String, String> processPayment(PaymentType paymentType, double amount, String currency,
@@ -22,12 +26,29 @@ public class PaymentProcessor {
             return Map.of("status", "failed", "message", "Validation error");
         }
 
-        PaymentGateway gateway = new PaymentGateway(config);
+        PaymentGateway gateway = selectGateway(payment);
+        if (gateway == null) {
+            return Map.of("status", "failed", "message", "Invalid gateway");
+
+        }
         Map<String, String> result = gateway.process(paymentType, payment, customerInfo);
-
         logTransaction(paymentType, amount, currency, customerInfo, paymentDetails, result);
-
         return result;
+    }
+
+    private PaymentGateway selectGateway(Payment payment) {
+        switch (payment.type) {
+            case CREDIT_CARD -> {
+                return creditCardGateway;
+            }
+            case DIGITAL_WALLET -> {
+                return digitalWalletGateway;
+            }
+            case BANK_TRANSFER -> {
+                return bankTransferGateway;
+            }
+        }
+        return null;
     }
 
     private void logTransaction(PaymentType paymentType, double amount, String currency,
@@ -39,13 +60,11 @@ public class PaymentProcessor {
     }
 
     public static void main(String[] args) {
-        Map<String, String> config = Map.of(
-                "credit_card_endpoint", "https://api.creditcard.com/process",
-                "digital_wallet_endpoint", "https://api.digitalwallet.com/process",
-                "bank_transfer_endpoint", "https://api.banktransfer.com/process"
+        PaymentProcessor processor = new PaymentProcessor(
+                "https://api.creditcard.com/process",
+                "https://api.digitalwallet.com/process",
+                "https://api.banktransfer.com/process"
         );
-
-        PaymentProcessor processor = new PaymentProcessor(config);
         Map<String, String> customer = Map.of("name", "John Doe", "email", "john@example.com");
         Map<String, String> paymentDetails = Map.of("card_number", "123456789012", "expiry", "12/25", "cvv", "123");
 
