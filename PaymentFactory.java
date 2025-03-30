@@ -15,31 +15,27 @@ public class PaymentFactory {
      * @param paymentDetails Extra payment details (cardNumber, walletId, accountNumber, etc.)
      * @return A concrete Payment subclass instance or null if the type is unknown
      */
-    public static Payment createPayment(String paymentType, double amount,
+    public static Payment createPayment(PaymentType paymentType, double amount,
                                         String currency, Map<String, String> paymentDetails) {
-        switch (paymentType) {
-            case "credit_card":
-                return new CreditCardPayment(
-                        amount,
-                        currency,
-                        paymentDetails.getOrDefault("card_number", ""),
-                        paymentDetails.getOrDefault("expiry", ""),
-                        paymentDetails.getOrDefault("cvv", "")
-                );
-            case "digital_wallet":
-                return new DigitalWalletPayment(
-                        amount,
-                        currency,
-                        paymentDetails.getOrDefault("wallet_id", "")
-                );
-            case "bank_transfer":
-                return new BankTransferPayment(
-                        amount,
-                        currency,
-                        paymentDetails.getOrDefault("account_number", "")
-                );
-            default:
-                return null;
-        }
+        return switch (paymentType) {
+            case PaymentType.CREDIT_CARD -> new CreditCardPayment(
+                    amount,
+                    currency,
+                    paymentDetails.getOrDefault("card_number", ""),
+                    paymentDetails.getOrDefault("expiry", ""),
+                    paymentDetails.getOrDefault("cvv", "")
+            );
+            case PaymentType.DIGITAL_WALLET -> new DigitalWalletPayment(
+                    amount,
+                    currency,
+                    paymentDetails.getOrDefault("wallet_id", "")
+            );
+            case PaymentType.BANK_TRANSFER -> new BankTransferPayment(
+                    amount,
+                    currency,
+                    paymentDetails.getOrDefault("account_number", "")
+            );
+            default -> null;
+        };
     }
 }

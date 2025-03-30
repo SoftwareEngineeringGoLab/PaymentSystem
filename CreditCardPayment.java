@@ -19,6 +19,7 @@ public class CreditCardPayment extends Payment {
     public CreditCardPayment(double amount, String currency,
                              String cardNumber, String expiry, String cvv) {
         super(amount, currency);
+        this.type = PaymentType.CREDIT_CARD;
         this.cardNumber = cardNumber;
         this.expiry = expiry;
         this.cvv = cvv;
