@@ -14,6 +14,7 @@ public class BankTransferPayment extends Payment {
      */
     public BankTransferPayment(double amount, String currency, String accountNumber) {
         super(amount, currency);
+        this.type = PaymentType.BANK_TRANSFER;
         this.accountNumber = accountNumber;
     }
 

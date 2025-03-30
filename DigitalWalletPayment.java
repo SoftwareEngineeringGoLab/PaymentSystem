@@ -14,6 +14,7 @@ public class DigitalWalletPayment extends Payment {
      */
     public DigitalWalletPayment(double amount, String currency, String walletId) {
         super(amount, currency);
+        this.type = PaymentType.DIGITAL_WALLET;
         this.walletId = walletId;
     }
 

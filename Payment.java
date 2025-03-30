@@ -5,6 +5,7 @@ import java.util.Date;
  */
 public abstract class Payment {
 
+    PaymentType type;
     protected double amount;
     protected String currency;
     protected Date timeOfEntry;
