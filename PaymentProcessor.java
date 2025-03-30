@@ -75,8 +75,8 @@ public class PaymentProcessor {
      */
     private PaymentGateway selectGateway(GatewayType gatewayType) {
         return switch (gatewayType) {
-            case GatewayType.STRIPE -> stripeGateway;
-            case GatewayType.PAYPAL -> paypalGateway;
+            case STRIPE -> stripeGateway;
+            case PAYPAL -> paypalGateway;
         };
     }
 
