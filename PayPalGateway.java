@@ -5,7 +5,7 @@ import java.util.Map;
  * Concrete implementation of PaymentGateway for PayPal payment processing.
  */
 public class PayPalGateway extends BaseGateway {
-    
+
     private String clientId;
     private String clientSecret;
     
@@ -20,6 +20,7 @@ public class PayPalGateway extends BaseGateway {
         super(endpoint);
         this.clientId = clientId;
         this.clientSecret = clientSecret;
+        this.type = GatewayType.PAYPAL;
     }
     
     @Override
