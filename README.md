@@ -98,9 +98,27 @@
 
 ### بازسازی کلاس PaymentProcessor
 - امکان انتخاب درگاه پرداخت در زمان اجرا
-- پیاده‌سازی چندریختی با استفاده از رابط `PaymentGateway`
+- پیاده‌سازی Polymorphism با استفاده از رابط `PaymentGateway`
 - ارسال درخواست پرداخت به درگاه انتخاب شده
 
 ---
 
 پیاده‌سازی وراثت و Polymorphism از طریق رابط `PaymentGateway` امکان انتخاب و تعویض درگاه‌های پرداخت در زمان اجرا را فراهم می‌کند. این طراحی، سیستم را برای تغییرات آینده آماده می‌سازد و انعطاف‌پذیری آن را هم افزایش می‌دهد.
+
+# گزارش فاز چهارم پروژه - پیاده‌سازی Dependency Injection
+
+### 1. اضافه شدن کلاس جدید `ConfigManager`
+- خواندن مقادیر پیکربندی از فایل `app.properties`.
+- بارگذاری مقادیر مورد نیاز برای ساخت درگاه‌های پرداخت (endpoint، کلیدها و شناسه‌ها).
+### 2. افزودن فایل `app.properties`
+- شامل مقادیر پیکربندی مانند:
+  ```properties
+  paypal.api.url = https://api.paypal.com
+  paypal.client.secret = paypal_client_secret
+  paypal.client.id = paypal_client_id
+  stripe.api.url = https://api.stripe.com
+  stripe.api.key = stripe_api_key
+
+### 3.Dependency Injection
+
+ با استفاده از Dependency Injection، لیست درگاه‌های پرداخت به‌صورت پارامتر به کلاس `PaymentProcessor` تزریق شد؛ این کار باعث حذف وابستگی مستقیم به کلاس‌های خاص، افزایش انعطاف‌پذیری سیستم و ساده‌تر شدن تست و نگهداری کد گردید.
